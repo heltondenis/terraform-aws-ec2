@@ -1,0 +1,41 @@
+# Template Terraform to deploy to Cloud Infrastructure
+
+# This template allows you to deploy your infrastructure using Terraform to supported cloud providers.
+# The workflow allows running tests, security scans on feature branches (as well as master).
+# After merging code to master the infrastructure will be deployed to cloud according to the given terraform template.
+
+# Prerequisites: credentials according to used cloud provider.
+# For advanced cases, please, follow terraform docs https://www.terraform.io/docs/index.html.
+
+
+image: hashicorp/terraform
+
+pipelines:
+  branches:
+    master:
+        - step:
+            name: Validation
+            deployment: Test
+            script:
+              - terraform init
+              - terraform validate
+        - step:
+            name: Security Scan
+            trigger: manual
+            script:
+              # Run a security scan for sensitive data.
+              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+              - pipe: atlassian/git-secrets-scan:0.4.3
+        - step:
+            name: Deploy to Production
+            deployment: Production
+            trigger: manual
+            script:
+              - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+              - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+              - terraform init
+              - terraform plan
+              - terraform apply -auto-approve
+              
+
+
